@@ -140,24 +140,34 @@ export default function SamplePage() {
     setOverallAnalysis('');
 
     try {
+      // 检查 API 密钥
+      if (!ERNIE_API_KEY || !ERNIE_SECRET_KEY || 
+          ERNIE_API_KEY === 'your_api_key_here' || 
+          ERNIE_SECRET_KEY === 'your_secret_key_here') {
+        throw new Error('请先配置百度文心一言 API 密钥（在 .env 文件中设置 VITE_ERNIE_API_KEY 和 VITE_ERNIE_SECRET_KEY）');
+      }
+
       const accessToken = await getAccessToken();
       
       const addedCount = grouped.filter(d => d.type === 'added').length;
       const removedCount = grouped.filter(d => d.type === 'removed').length;
       const modifiedCount = grouped.filter(d => d.type === 'modified').length;
 
-      const prompt = `你是文档分析专家。快速分析以下变更：
+      const prompt = `你是一位具有金融法律专业背景的资深文档分析专家，专门负责审查法律交易文件的变更。
 
-新增 ${addedCount} 处 | 删除 ${removedCount} 处 | 修改 ${modifiedCount} 处
+**文档类型**：法律交易文件
+**变更统计**：新增 ${addedCount} 处 | 删除 ${removedCount} 处 | 修改 ${modifiedCount} 处
 
-请用简洁的 Markdown 格式输出（控制在 150 字以内）：
+请从法律和金融专业角度，用简洁的 Markdown 格式输出分析（控制在 200 字以内）：
 
-1. **变更概览**：一句话总结
-2. **变更程度**：轻微/中等/重大
-3. **关键影响**：2-3 个要点
+1. **变更概览**：从法律合规角度总结主要变更方向
+2. **变更程度**：轻微/中等/重大（考虑法律风险）
+3. **关键影响**：列出 2-3 个最重要的法律或商业影响点
+4. **风险提示**：如有潜在法律风险，请特别标注
 
-保持简洁，直接输出结果。`;
+保持专业、简洁、准确。`;
 
+      console.log('发送总体分析请求...');
       const response = await fetch(
         `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-8k?access_token=${accessToken}`,
         {
@@ -171,16 +181,23 @@ export default function SamplePage() {
       );
 
       if (!response.ok || !response.body) {
-        throw new Error('AI 分析请求失败');
+        const errorText = await response.text();
+        console.error('API 响应错误:', response.status, errorText);
+        throw new Error(`AI 分析请求失败 (${response.status}): ${errorText}`);
       }
 
+      console.log('开始接收流式响应...');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let hasReceivedData = false;
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          console.log('流式响应接收完成');
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
@@ -191,18 +208,32 @@ export default function SamplePage() {
             const data = line.slice(6);
             try {
               const parsed = JSON.parse(data);
+              console.log('接收到数据:', parsed);
               if (parsed.result) {
+                hasReceivedData = true;
                 setOverallAnalysis(prev => prev + parsed.result);
               }
+              if (parsed.error_code) {
+                throw new Error(`API 错误 (${parsed.error_code}): ${parsed.error_msg}`);
+              }
             } catch (e) {
-              // 忽略解析错误
+              if (e instanceof Error && e.message.includes('API 错误')) {
+                throw e;
+              }
+              console.warn('解析数据失败:', data, e);
             }
           }
         }
       }
+
+      if (!hasReceivedData) {
+        console.warn('未接收到任何分析结果');
+        throw new Error('未接收到 AI 分析结果，请检查 API 配置');
+      }
     } catch (error) {
+      console.error('总体分析错误:', error);
       toast({
-        title: 'AI 分析失败',
+        title: 'AI 总体分析失败',
         description: error instanceof Error ? error.message : '未知错误',
         variant: 'destructive',
       });
@@ -217,6 +248,13 @@ export default function SamplePage() {
     setActiveDiffNumber(index + 1);
 
     try {
+      // 检查 API 密钥
+      if (!ERNIE_API_KEY || !ERNIE_SECRET_KEY || 
+          ERNIE_API_KEY === 'your_api_key_here' || 
+          ERNIE_SECRET_KEY === 'your_secret_key_here') {
+        throw new Error('请先配置百度文心一言 API 密钥（在 .env 文件中设置 VITE_ERNIE_API_KEY 和 VITE_ERNIE_SECRET_KEY）');
+      }
+
       const accessToken = await getAccessToken();
       
       let diffDescription = '';
@@ -234,17 +272,21 @@ export default function SamplePage() {
         diffDescription = `删除：${contentPreview}`;
       }
 
-      const prompt = `快速分析此差异（100字内）：
+      const prompt = `你是一位具有金融法律专业背景的资深文档分析专家，专门负责审查法律交易文件的变更。
 
-${diffDescription}
+**文档类型**：法律交易文件
+**差异内容**：${diffDescription}
 
-输出格式：
-**摘要**：一句话
-**重要度**：⭐⭐⭐
-**影响**：简述
+请从法律和金融专业角度，用简洁的 Markdown 格式输出分析（控制在 150 字以内）：
 
-保持简洁。`;
+1. **内容摘要**：一句话概括此变更的法律意义
+2. **重要程度**：⭐⭐⭐⭐⭐（考虑法律风险和商业影响）
+3. **法律影响**：简述对合同权利义务的影响
+4. **风险提示**：如有潜在法律风险，请特别标注
 
+保持专业、简洁、准确。`;
+
+      console.log('发送单点分析请求...');
       const response = await fetch(
         `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-8k?access_token=${accessToken}`,
         {
@@ -258,16 +300,23 @@ ${diffDescription}
       );
 
       if (!response.ok || !response.body) {
-        throw new Error('AI 分析请求失败');
+        const errorText = await response.text();
+        console.error('API 响应错误:', response.status, errorText);
+        throw new Error(`AI 分析请求失败 (${response.status}): ${errorText}`);
       }
 
+      console.log('开始接收流式响应...');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let buffer = '';
+      let hasReceivedData = false;
 
       while (true) {
         const { done, value } = await reader.read();
-        if (done) break;
+        if (done) {
+          console.log('流式响应接收完成');
+          break;
+        }
 
         buffer += decoder.decode(value, { stream: true });
         const lines = buffer.split('\n');
@@ -278,18 +327,32 @@ ${diffDescription}
             const data = line.slice(6);
             try {
               const parsed = JSON.parse(data);
+              console.log('接收到数据:', parsed);
               if (parsed.result) {
+                hasReceivedData = true;
                 setDiffAnalysis(prev => prev + parsed.result);
               }
+              if (parsed.error_code) {
+                throw new Error(`API 错误 (${parsed.error_code}): ${parsed.error_msg}`);
+              }
             } catch (e) {
-              // 忽略解析错误
+              if (e instanceof Error && e.message.includes('API 错误')) {
+                throw e;
+              }
+              console.warn('解析数据失败:', data, e);
             }
           }
         }
       }
+
+      if (!hasReceivedData) {
+        console.warn('未接收到任何分析结果');
+        throw new Error('未接收到 AI 分析结果，请检查 API 配置');
+      }
     } catch (error) {
+      console.error('单点分析错误:', error);
       toast({
-        title: 'AI 分析失败',
+        title: 'AI 单点分析失败',
         description: error instanceof Error ? error.message : '未知错误',
         variant: 'destructive',
       });
