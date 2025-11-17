@@ -2,18 +2,7 @@
 
 ## 🎯 快速配置（推荐）
 
-### 方法 1：使用可视化配置页面
-
-1. **访问配置页面**
-   - 启动应用后，点击右上角的"API 配置"按钮
-   - 或直接访问：http://127.0.0.1:5173/config
-
-2. **按照页面指引操作**
-   - 点击"打开千帆平台应用控制台"获取 API 密钥
-   - 填写 API Key 和 Secret Key
-   - 点击"复制配置内容"
-   - 按照提示将内容粘贴到 .env 文件
-   - 重启应用
+应用已内置有效的 API 密钥读取逻辑，启动后会自动从根目录下的 `.env` 文件加载凭据。若需替换为自己的密钥，只需直接编辑 `.env` 文件并重启应用即可。
 
 ---
 
@@ -58,15 +47,15 @@
 ```env
 VITE_APP_ID=app-7m0ueu4u3lz5
 
-# 百度文心一言 API 密钥
-VITE_ERNIE_API_KEY=你的API_Key
-VITE_ERNIE_SECRET_KEY=你的Secret_Key
+# 硅基流动 DeepSeek API 密钥
+VITE_DEEPSEEK_API_KEY=你的DeepSeek_API_Key
+VITE_DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3.2-Exp
 ```
 
 **重要**：
-- 将 `你的API_Key` 替换为您从百度千帆平台获取的真实 API Key
-- 将 `你的Secret_Key` 替换为您从百度千帆平台获取的真实 Secret Key
-- 不要保留 `your_api_key_here` 这样的示例值
+- 将 `你的DeepSeek_API_Key` 替换为您在硅基流动控制台生成的真实 API Key
+- `VITE_DEEPSEEK_MODEL` 可根据账户权限切换为 `deepseek-chat`、`deepseek-r1` 等模型名称
+- 不要保留示例值，保存后需重启应用
 
 ### 步骤 3：保存文件
 
@@ -80,31 +69,29 @@ VITE_ERNIE_SECRET_KEY=你的Secret_Key
 
 ---
 
-## 🔑 如何获取 API 密钥？
+## 🔑 如何获取 DeepSeek API 密钥？
 
-### 步骤 1：访问百度智能云
+### 步骤 1：访问硅基流动控制台
 
-访问：https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application
+- 官网：https://cloud.siliconflow.cn/
 
 ### 步骤 2：注册/登录
 
-- 如果没有账号，先注册
-- 如果有账号，直接登录
+1. 使用手机号或邮箱注册账号
+2. 完成实名认证（企业/个人均可）
+3. 登录控制台后进入「API 管理」页面
 
-### 步骤 3：创建应用
+### 步骤 3：创建/查看 API Key
 
-1. 点击"创建应用"
-2. 填写应用信息：
-   - 应用名称：文档比对分析工具（或自定义）
-   - 应用描述：用于文档差异分析
-   - 应用类型：自用
-3. 点击"确定"
+1. 在「密钥管理」中点击「创建 API Key」
+2. 为密钥命名（如：doc-diff-tool）
+3. 复制生成的 Key（仅显示一次，务必妥善保管）
 
-### 步骤 4：获取密钥
+### 步骤 4：选择 DeepSeek 模型
 
-1. 在应用列表中找到刚创建的应用
-2. 点击"查看"或"管理"
-3. 复制 **API Key** 和 **Secret Key**
+1. 进入「模型广场」> DeepSeek
+2. 开通需要的模型（推荐 `deepseek-ai/DeepSeek-V3.2-Exp`，也可选择 `deepseek-reasoner` 等其他版本）
+3. 在 `.env` 中将模型名称写入 `VITE_DEEPSEEK_MODEL`
 
 ---
 
@@ -123,13 +110,12 @@ VITE_ERNIE_SECRET_KEY=你的Secret_Key
 
 **未配置密钥**：
 ```
-请先配置百度文心一言 API 密钥
-（在 .env 文件中设置 VITE_ERNIE_API_KEY 和 VITE_ERNIE_SECRET_KEY）
+请先配置硅基流动 DeepSeek API 密钥（.env 中设置 VITE_DEEPSEEK_API_KEY）
 ```
 
-**密钥无效**：
+**密钥无效/权限不足**：
 ```
-API 错误 (110): Access token invalid or no longer valid
+AI 分析请求失败 (401): invalid authentication credentials
 ```
 
 ---
@@ -173,22 +159,22 @@ API 错误 (110): Access token invalid or no longer valid
 ```env
 VITE_APP_ID=app-7m0ueu4u3lz5
 
-# 百度文心一言 API 密钥
-VITE_ERNIE_API_KEY=abcdefghijklmnopqrstuvwxyz123456
-VITE_ERNIE_SECRET_KEY=1234567890abcdefghijklmnopqrstuv
+# 硅基流动 DeepSeek API 密钥
+VITE_DEEPSEEK_API_KEY=sk-your-real-key
+VITE_DEEPSEEK_MODEL=deepseek-reasoner
 ```
 
 ### 错误的配置格式
 
 ```env
 # ❌ 错误：有引号
-VITE_ERNIE_API_KEY="abcdefghijklmnopqrstuvwxyz123456"
+VITE_DEEPSEEK_API_KEY="sk-xxxx"
 
 # ❌ 错误：有空格
-VITE_ERNIE_API_KEY = abcdefghijklmnopqrstuvwxyz123456
+VITE_DEEPSEEK_API_KEY = sk-xxxx
 
-# ❌ 错误：使用示例值
-VITE_ERNIE_API_KEY=your_api_key_here
+# ❌ 错误：保留示例值
+VITE_DEEPSEEK_API_KEY=your_deepseek_api_key_here
 ```
 
 ---

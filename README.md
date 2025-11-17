@@ -109,31 +109,29 @@ Vite、TypeScript、React、Supabase
 # Step 6: IDE终端输入命令行，启动开发服务器：npm run dev -- --host 127.0.0.1
 ```
 
-### ⚠️ 重要：配置百度文心一言 API 密钥
+### ⚠️ 重要：配置硅基流动 DeepSeek API 密钥
 
-本工具使用百度文心一言 API 进行 AI 分析，**必须先配置 API 密钥才能使用 AI 分析功能**。
+应用使用硅基流动的 DeepSeek 模型完成 AI 分析，**必须先配置 API Key**。
 
 #### 快速配置步骤：
 
-1. **获取 API 密钥**
-   - 访问 [百度智能云千帆平台](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)
-   - 注册并登录账号
-   - 创建应用，获取 API Key 和 Secret Key
+1. **获取 API Key**
+   - 访问 [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/)
+   - 注册并登录，开通 DeepSeek 模型
+   - 在“API 密钥”页面创建并复制 Key
 
-2. **配置密钥**
-   - 打开项目根目录下的 `.env` 文件
-   - 找到以下两行：
+2. **配置 Key**
+   - 打开项目根目录下的 `.env`
+   - 写入：
      ```env
-     VITE_ERNIE_API_KEY=your_api_key_here
-     VITE_ERNIE_SECRET_KEY=your_secret_key_here
+     VITE_DEEPSEEK_API_KEY=sk_your_key
+     VITE_DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3.2-Exp
      ```
-   - 将 `your_api_key_here` 替换为您的 API Key
-   - 将 `your_secret_key_here` 替换为您的 Secret Key
-   - 保存文件
+   - 如需切换模型，修改 `VITE_DEEPSEEK_MODEL`
 
 3. **重启应用**
-   - 如果应用正在运行，请重启
-   - 配置生效后即可使用 AI 分析功能
+   - 停止正在运行的开发服务器并重新启动
+   - 浏览器刷新后即可调用 DeepSeek 分析
 
 #### 详细配置指南：
 
@@ -168,8 +166,8 @@ Vite、TypeScript、React、Supabase
 
 ### 🎯 快速链接
 
-- [百度智能云千帆平台](https://console.bce.baidu.com/qianfan/overview)
-- [文心一言 API 文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html)
+- [硅基流动控制台](https://cloud.siliconflow.cn/)
+- [DeepSeek API 文档](https://docs.siliconflow.cn/api-reference/)
 - [秒哒帮助文档](https://cloud.baidu.com/doc/MIAODA/s/Xmewgmsq7)
 
 ### 📞 获取帮助
@@ -183,4 +181,4 @@ Vite、TypeScript、React、Supabase
 
 **当前版本**：v2.2.1  
 **更新日期**：2025-11-17  
-**技术栈**：React + TypeScript + Vite + 百度文心一言 API
+**技术栈**：React + TypeScript + Vite + DeepSeek (SiliconFlow)

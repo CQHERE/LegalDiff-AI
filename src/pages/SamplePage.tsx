@@ -1,16 +1,14 @@
 import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Settings } from 'lucide-react';
 import DocumentUploader from '@/components/DocumentUploader';
 import DocumentViewer, { DocumentViewerRef } from '@/components/DocumentViewer';
 import OverallAnalysisPanel from '@/components/OverallAnalysisPanel';
 import DiffAnalysisPanel from '@/components/DiffAnalysisPanel';
 import DiffNavigator from '@/components/DiffNavigator';
-import { 
-  parseDocument, 
-  compareDocuments, 
+import {
+  parseDocument,
+  compareDocuments,
   generateDiffSummary,
   getGroupedDiffs,
   type DocumentInfo,
@@ -18,11 +16,143 @@ import {
   type GroupedDiff
 } from '@/services/documentService';
 
-const ERNIE_API_KEY = import.meta.env.VITE_ERNIE_API_KEY;
-const ERNIE_SECRET_KEY = import.meta.env.VITE_ERNIE_SECRET_KEY;
+const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
+const DEEPSEEK_MODEL = import.meta.env.VITE_DEEPSEEK_MODEL || "deepseek-ai/DeepSeek-V3.2-Exp";
+const DEEPSEEK_API_ENDPOINT = import.meta.env.VITE_DEEPSEEK_API_ENDPOINT || 'https://api.siliconflow.cn/v1/chat/completions';
+const DEEPSEEK_MAX_TOKENS = Number(import.meta.env.VITE_DEEPSEEK_MAX_TOKENS) || 1024;
+const DEEPSEEK_TEMPERATURE = Number(import.meta.env.VITE_DEEPSEEK_TEMPERATURE) || 0.7;
+const DEEPSEEK_TOP_P = Number(import.meta.env.VITE_DEEPSEEK_TOP_P) || 0.7;
+const DEEPSEEK_TOP_K = Number(import.meta.env.VITE_DEEPSEEK_TOP_K) || 50;
+const DEEPSEEK_FREQUENCY_PENALTY = Number(import.meta.env.VITE_DEEPSEEK_FREQUENCY_PENALTY) || 0.5;
+const DEEPSEEK_MIN_P = Number(import.meta.env.VITE_DEEPSEEK_MIN_P) || 0.05;
+const MAX_OVERVIEW_DIFFS = 20;
+const DIFF_SNIPPET_LENGTH = 400;
+
+const sanitizeText = (text: string, maxLength: number): string => {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) {
+    return '(空内容)';
+  }
+
+  if (cleaned.length <= maxLength) {
+    return cleaned;
+  }
+
+  return `${cleaned.slice(0, maxLength)}...`;
+};
+
+const summarizeDiffs = (diffs: GroupedDiff[]): string => {
+  if (diffs.length === 0) {
+    return '无可用差异。';
+  }
+
+  const items = diffs.slice(0, MAX_OVERVIEW_DIFFS).map((diff, index) => {
+    const order = index + 1;
+    if (diff.type === 'modified') {
+      const removedText = sanitizeText(diff.removed?.value || '', DIFF_SNIPPET_LENGTH / 2);
+      const addedText = sanitizeText(diff.added?.value || '', DIFF_SNIPPET_LENGTH / 2);
+      return `${order}. [修改] ${removedText} -> ${addedText}`;
+    }
+
+    if (diff.type === 'added') {
+      const addedText = sanitizeText(diff.added?.value || '', DIFF_SNIPPET_LENGTH);
+      return `${order}. [新增] ${addedText}`;
+    }
+
+    const removedText = sanitizeText(diff.removed?.value || '', DIFF_SNIPPET_LENGTH);
+    return `${order}. [删除] ${removedText}`;
+  });
+
+  if (diffs.length > MAX_OVERVIEW_DIFFS) {
+    items.push(`... 另有 ${diffs.length - MAX_OVERVIEW_DIFFS} 条差异未列出`);
+  }
+
+  return items.join('\n');
+};
+
+const formatDiffDetail = (diff: GroupedDiff): string => {
+  if (diff.type === 'modified') {
+    const removedText = sanitizeText(diff.removed?.value || '', DIFF_SNIPPET_LENGTH);
+    const addedText = sanitizeText(diff.added?.value || '', DIFF_SNIPPET_LENGTH);
+    return `原文：${removedText}\n修改后：${addedText}`;
+  }
+
+  if (diff.type === 'added') {
+    const addedText = sanitizeText(diff.added?.value || '', DIFF_SNIPPET_LENGTH);
+    return `新增内容：${addedText}`;
+  }
+
+  const removedText = sanitizeText(diff.removed?.value || '', DIFF_SNIPPET_LENGTH);
+  return `删除内容：${removedText}`;
+};
+
+const requestDeepSeekAnalysis = async (prompt: string, onChunk: (chunk: string) => void) => {
+  if (!DEEPSEEK_API_KEY) {
+    throw new Error('请先在 .env 中配置硅基流动 DeepSeek API 密钥 (VITE_DEEPSEEK_API_KEY)');
+  }
+
+  const response = await fetch(DEEPSEEK_API_ENDPOINT, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${DEEPSEEK_API_KEY}`,
+    },
+    body: JSON.stringify({
+      model: DEEPSEEK_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a finance and legal expert. Analyze differences between transaction documents and provide professional insight with actionable recommendations.',
+        },
+        {
+          role: 'user',
+          content: prompt,
+        },
+      ],
+      stream: false,
+      max_tokens: DEEPSEEK_MAX_TOKENS,
+      enable_thinking: false,
+      thinking_budget: 4096,
+      temperature: DEEPSEEK_TEMPERATURE,
+      top_p: DEEPSEEK_TOP_P,
+      top_k: DEEPSEEK_TOP_K,
+      min_p: DEEPSEEK_MIN_P,
+      frequency_penalty: DEEPSEEK_FREQUENCY_PENALTY,
+      n: 1,
+      response_format: { type: 'text' },
+      tools: [
+        {
+          type: 'function',
+          function: {
+            name: 'noop',
+            description: 'Placeholder function metadata to align with SiliconFlow DeepSeek API schema.',
+            parameters: {},
+            strict: false,
+          },
+        },
+      ],
+    }),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error('DeepSeek API 响应错误:', response.status, errorText);
+    throw new Error(`AI 分析请求失败 (${response.status}): ${errorText}`);
+  }
+
+  const data = await response.json();
+  const choice = data.choices?.[0];
+  const content = choice?.message?.content || choice?.delta?.content || choice?.text || '';
+
+  if (!content) {
+    throw new Error('未接收到 AI 分析结果，请检查 API 配置');
+  }
+
+  onChunk(content);
+};
 
 export default function SamplePage() {
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [doc1, setDoc1] = useState<DocumentInfo | null>(null);
   const [doc2, setDoc2] = useState<DocumentInfo | null>(null);
@@ -40,9 +170,6 @@ export default function SamplePage() {
 
   const doc1ViewerRef = useRef<DocumentViewerRef>(null);
   const doc2ViewerRef = useRef<DocumentViewerRef>(null);
-  
-  // 缓存 access token，避免每次都重新获取
-  const accessTokenRef = useRef<{ token: string; expireTime: number } | null>(null);
 
   const handleDoc1Upload = async (file: File) => {
     try {
@@ -117,122 +244,37 @@ export default function SamplePage() {
     }
   };
 
-  const getAccessToken = async (): Promise<string> => {
-    // 检查缓存的 token 是否还有效（提前 5 分钟过期）
-    const now = Date.now();
-    if (accessTokenRef.current && accessTokenRef.current.expireTime > now) {
-      return accessTokenRef.current.token;
-    }
-
-    // 获取新的 token
-    const url = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${ERNIE_API_KEY}&client_secret=${ERNIE_SECRET_KEY}`;
-    const response = await fetch(url, { method: 'POST' });
-    const data = await response.json();
-    
-    // 缓存 token（默认有效期 30 天，这里设置为 25 天后过期）
-    accessTokenRef.current = {
-      token: data.access_token,
-      expireTime: now + 25 * 24 * 60 * 60 * 1000
-    };
-    
-    return data.access_token;
-  };
-
   const analyzeOverall = async (grouped: GroupedDiff[]) => {
     setIsOverallAnalyzing(true);
     setOverallAnalysis('');
 
     try {
       // 检查 API 密钥
-      if (!ERNIE_API_KEY || !ERNIE_SECRET_KEY || 
-          ERNIE_API_KEY === 'your_api_key_here' || 
-          ERNIE_SECRET_KEY === 'your_secret_key_here') {
-        throw new Error('请先配置百度文心一言 API 密钥（在 .env 文件中设置 VITE_ERNIE_API_KEY 和 VITE_ERNIE_SECRET_KEY）');
+      if (!DEEPSEEK_API_KEY) {
+        throw new Error('请先在 .env 中设置 VITE_DEEPSEEK_API_KEY，以启用 DeepSeek AI 分析');
       }
 
-      const accessToken = await getAccessToken();
-      
       const addedCount = grouped.filter(d => d.type === 'added').length;
       const removedCount = grouped.filter(d => d.type === 'removed').length;
       const modifiedCount = grouped.filter(d => d.type === 'modified').length;
+      const diffSummary = summarizeDiffs(grouped);
 
-      const prompt = `你是一位具有金融法律专业背景的资深文档分析专家，专门负责审查法律交易文件的变更。
+      const prompt = `你是一位具有金融法律专业背景的资深并购律师，正在评审交易文件的改动。基于以下差异信息进行专业解读：
 
-**文档类型**：法律交易文件
 **变更统计**：新增 ${addedCount} 处 | 删除 ${removedCount} 处 | 修改 ${modifiedCount} 处
+**主要差异列表**：
+${diffSummary}
 
-请从法律和金融专业角度，用简洁的 Markdown 格式输出分析（控制在 200 字以内）：
+请输出一份简洁的 Markdown 报告（约 200 字），包含：
+1. **变更概览**：主导的修改方向及业务意图
+2. **变更程度**：轻微 / 中等 / 重大，并解释判定依据
+3. **关键影响**：列出 3 个核心的法律或金融风险/机会
+4. **风险提示**：需要特别留意的条款或后续动作
 
-1. **变更概览**：从法律合规角度总结主要变更方向
-2. **变更程度**：轻微/中等/重大（考虑法律风险）
-3. **关键影响**：列出 2-3 个最重要的法律或商业影响点
-4. **风险提示**：如有潜在法律风险，请特别标注
-
-保持专业、简洁、准确。`;
-
-      console.log('发送总体分析请求...');
-      const response = await fetch(
-        `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-8k?access_token=${accessToken}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: prompt }],
-            stream: true,
-          }),
-        }
-      );
-
-      if (!response.ok || !response.body) {
-        const errorText = await response.text();
-        console.error('API 响应错误:', response.status, errorText);
-        throw new Error(`AI 分析请求失败 (${response.status}): ${errorText}`);
-      }
-
-      console.log('开始接收流式响应...');
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let hasReceivedData = false;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          console.log('流式响应接收完成');
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            try {
-              const parsed = JSON.parse(data);
-              console.log('接收到数据:', parsed);
-              if (parsed.result) {
-                hasReceivedData = true;
-                setOverallAnalysis(prev => prev + parsed.result);
-              }
-              if (parsed.error_code) {
-                throw new Error(`API 错误 (${parsed.error_code}): ${parsed.error_msg}`);
-              }
-            } catch (e) {
-              if (e instanceof Error && e.message.includes('API 错误')) {
-                throw e;
-              }
-              console.warn('解析数据失败:', data, e);
-            }
-          }
-        }
-      }
-
-      if (!hasReceivedData) {
-        console.warn('未接收到任何分析结果');
-        throw new Error('未接收到 AI 分析结果，请检查 API 配置');
-      }
+请确保分析紧扣以上差异，语言专业、审慎。`;
+      await requestDeepSeekAnalysis(prompt, chunk => {
+        setOverallAnalysis(prev => prev + chunk);
+      });
     } catch (error) {
       console.error('总体分析错误:', error);
       toast({
@@ -252,106 +294,27 @@ export default function SamplePage() {
 
     try {
       // 检查 API 密钥
-      if (!ERNIE_API_KEY || !ERNIE_SECRET_KEY || 
-          ERNIE_API_KEY === 'your_api_key_here' || 
-          ERNIE_SECRET_KEY === 'your_secret_key_here') {
-        throw new Error('请先配置百度文心一言 API 密钥（在 .env 文件中设置 VITE_ERNIE_API_KEY 和 VITE_ERNIE_SECRET_KEY）');
+      if (!DEEPSEEK_API_KEY) {
+        throw new Error('请先在 .env 中设置 VITE_DEEPSEEK_API_KEY，以启用 DeepSeek AI 分析');
       }
 
-      const accessToken = await getAccessToken();
-      
-      let diffDescription = '';
-      let contentPreview = '';
-      if (diff.type === 'modified') {
-        const removedText = (diff.removed?.value || '').substring(0, 100);
-        const addedText = (diff.added?.value || '').substring(0, 100);
-        diffDescription = `修改：${removedText} → ${addedText}`;
-        contentPreview = `${removedText}...`;
-      } else if (diff.type === 'added') {
-        contentPreview = (diff.added?.value || '').substring(0, 100);
-        diffDescription = `新增：${contentPreview}`;
-      } else {
-        contentPreview = (diff.removed?.value || '').substring(0, 100);
-        diffDescription = `删除：${contentPreview}`;
-      }
+      const diffDetail = formatDiffDetail(diff);
 
-      const prompt = `你是一位具有金融法律专业背景的资深文档分析专家，专门负责审查法律交易文件的变更。
+      const prompt = `你是一位资深金融法律顾问，请从交易审查的角度解读以下变更：
 
-**文档类型**：法律交易文件
-**差异内容**：${diffDescription}
+${diffDetail}
 
-请从法律和金融专业角度，用简洁的 Markdown 格式输出分析（控制在 150 字以内）：
+输出格式（控制在 200 字以内）：
+1. **内容摘要**：一句话说明变更及动机
+2. **重要程度**：用 1-5 ⭐ 评估，并解释影响维度（估值、权利义务、风险分担等）
+3. **法律/金融影响**：列出 2 条关键影响
+4. **风险提醒**：需要谈判或补充文件的要点
 
-1. **内容摘要**：一句话概括此变更的法律意义
-2. **重要程度**：⭐⭐⭐⭐⭐（考虑法律风险和商业影响）
-3. **法律影响**：简述对合同权利义务的影响
-4. **风险提示**：如有潜在法律风险，请特别标注
+保持专业、结论明确，可引用原文中的关键信息。`;
 
-保持专业、简洁、准确。`;
-
-      console.log('发送单点分析请求...');
-      const response = await fetch(
-        `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-8k?access_token=${accessToken}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            messages: [{ role: 'user', content: prompt }],
-            stream: true,
-          }),
-        }
-      );
-
-      if (!response.ok || !response.body) {
-        const errorText = await response.text();
-        console.error('API 响应错误:', response.status, errorText);
-        throw new Error(`AI 分析请求失败 (${response.status}): ${errorText}`);
-      }
-
-      console.log('开始接收流式响应...');
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let buffer = '';
-      let hasReceivedData = false;
-
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) {
-          console.log('流式响应接收完成');
-          break;
-        }
-
-        buffer += decoder.decode(value, { stream: true });
-        const lines = buffer.split('\n');
-        buffer = lines.pop() || '';
-
-        for (const line of lines) {
-          if (line.startsWith('data: ')) {
-            const data = line.slice(6);
-            try {
-              const parsed = JSON.parse(data);
-              console.log('接收到数据:', parsed);
-              if (parsed.result) {
-                hasReceivedData = true;
-                setDiffAnalysis(prev => prev + parsed.result);
-              }
-              if (parsed.error_code) {
-                throw new Error(`API 错误 (${parsed.error_code}): ${parsed.error_msg}`);
-              }
-            } catch (e) {
-              if (e instanceof Error && e.message.includes('API 错误')) {
-                throw e;
-              }
-              console.warn('解析数据失败:', data, e);
-            }
-          }
-        }
-      }
-
-      if (!hasReceivedData) {
-        console.warn('未接收到任何分析结果');
-        throw new Error('未接收到 AI 分析结果，请检查 API 配置');
-      }
+      await requestDeepSeekAnalysis(prompt, chunk => {
+        setDiffAnalysis(prev => prev + chunk);
+      });
     } catch (error) {
       console.error('单点分析错误:', error);
       toast({
@@ -382,24 +345,13 @@ export default function SamplePage() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto p-6 space-y-6">
         {/* 标题 */}
-        <div className="text-center space-y-2 relative">
+        <div className="text-center space-y-2">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             文档智能比对分析工具
           </h1>
           <p className="text-muted-foreground">
             上传两篇文档，AI 将自动分析差异并提供专业见解
           </p>
-          
-          {/* API 配置按钮 */}
-          <Button
-            variant="outline"
-            size="sm"
-            className="absolute top-0 right-0"
-            onClick={() => navigate('/config')}
-          >
-            <Settings className="w-4 h-4 mr-2" />
-            API 配置
-          </Button>
         </div>
 
         {/* 文档上传区域 */}

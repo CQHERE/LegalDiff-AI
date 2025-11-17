@@ -2,47 +2,34 @@
 
 ## 📋 概述
 
-本文档智能比对分析工具使用百度文心一言 API 进行 AI 分析。在使用前，您需要先配置 API 密钥。
+本文档智能比对分析工具使用 **硅基流动（SiliconFlow）的 DeepSeek 模型** 进行 AI 分析。开始使用前，需要先在控制台创建 API Key 并写入 `.env` 文件。
 
 ---
 
 ## 🔑 获取 API 密钥
 
-### 步骤 1：注册百度智能云账号
+### 步骤 1：注册硅基流动账号
 
-1. 访问 [百度智能云](https://cloud.baidu.com/)
-2. 点击右上角"注册"按钮
-3. 按照提示完成账号注册
+1. 访问 [https://cloud.siliconflow.cn/](https://cloud.siliconflow.cn/)
+2. 点击“注册”，完成手机号/邮箱验证
+3. 按提示完成实名认证（企业或个人均可）
 
-### 步骤 2：开通文心一言服务
+### 步骤 2：开通 DeepSeek 模型
 
-1. 登录百度智能云控制台
-2. 访问 [千帆大模型平台](https://console.bce.baidu.com/qianfan/overview)
-3. 点击"立即使用"开通服务
-4. 完成实名认证（如需要）
+1. 登录控制台，进入“模型广场”
+2. 找到 DeepSeek 系列模型（如 `deepseek-ai/DeepSeek-V3.2-Exp`、`deepseek-reasoner`）
+3. 点击“开通”并勾选所需模型
 
-### 步骤 3：创建应用
+### 步骤 3：创建 API Key
 
-1. 访问 [应用接入](https://console.bce.baidu.com/qianfan/ais/console/applicationConsole/application)
-2. 点击"创建应用"按钮
-3. 填写应用信息：
-   - **应用名称**：文档比对分析工具（或自定义）
-   - **应用描述**：用于文档差异分析和 AI 智能分析
-   - **应用类型**：选择"自用"
-4. 点击"确定"创建应用
-
-### 步骤 4：获取 API 密钥
-
-1. 在应用列表中找到刚创建的应用
-2. 点击"查看"或"管理"
-3. 复制以下信息：
-   - **API Key**（也叫 Client ID）
-   - **Secret Key**（也叫 Client Secret）
+1. 打开“API 密钥”或“密钥管理”页面
+2. 点击“创建 API Key”
+3. 复制新生成的 Key（只显示一次）
 
 **重要提示**：
-- ⚠️ 请妥善保管 API 密钥，不要泄露给他人
-- ⚠️ 不要将密钥提交到公开的代码仓库
-- ⚠️ 如果密钥泄露，请立即重置
+- ⚠️ API Key 具有账号权限，请妥善保存
+- ⚠️ 不要将 Key 提交到公共仓库
+- ⚠️ 遗失或泄露后请及时在控制台删除并重新生成
 
 ---
 
@@ -51,28 +38,22 @@
 ### 方法 1：修改 .env 文件（推荐）
 
 1. 打开项目根目录下的 `.env` 文件
-2. 找到以下两行：
+2. 添加或修改以下内容：
    ```env
-   VITE_ERNIE_API_KEY=your_api_key_here
-   VITE_ERNIE_SECRET_KEY=your_secret_key_here
+   VITE_DEEPSEEK_API_KEY=sk_xxx
+   VITE_DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3.2-Exp
    ```
-3. 将 `your_api_key_here` 替换为您的 API Key
-4. 将 `your_secret_key_here` 替换为您的 Secret Key
+3. 将 `sk_xxx` 替换为您实际的 API Key
+4. 如需切换模型，只需调整 `VITE_DEEPSEEK_MODEL`
 5. 保存文件
-
-**示例**：
-```env
-VITE_ERNIE_API_KEY=abcdefghijklmnopqrstuvwxyz123456
-VITE_ERNIE_SECRET_KEY=1234567890abcdefghijklmnopqrstuv
-```
 
 ### 方法 2：使用环境变量
 
-如果您使用的是服务器部署，可以直接设置环境变量：
+如果使用 CI/CD 或云服务器部署，可直接注入环境变量：
 
 ```bash
-export VITE_ERNIE_API_KEY=your_api_key_here
-export VITE_ERNIE_SECRET_KEY=your_secret_key_here
+export VITE_DEEPSEEK_API_KEY=sk_xxx
+export VITE_DEEPSEEK_MODEL=deepseek-ai/DeepSeek-V3.2-Exp
 ```
 
 ---
@@ -102,24 +83,22 @@ npm run dev
 
 **错误 1：未配置 API 密钥**
 ```
-请先配置百度文心一言 API 密钥
-（在 .env 文件中设置 VITE_ERNIE_API_KEY 和 VITE_ERNIE_SECRET_KEY）
+请先配置硅基流动 DeepSeek API 密钥（VITE_DEEPSEEK_API_KEY）
 ```
 
 **解决方法**：
-- 检查 `.env` 文件是否存在
-- 检查密钥是否正确填写
-- 检查是否重启了应用
+- 检查 `.env` 中是否已写入 `VITE_DEEPSEEK_API_KEY`
+- 修改后记得重启开发服务器
 
-**错误 2：API 密钥无效**
+**错误 2：鉴权失败 / 模型未开通**
 ```
-API 错误 (110): Access token invalid or no longer valid
+AI 分析请求失败 (401): invalid authentication credentials
 ```
 
 **解决方法**：
-- 检查 API Key 和 Secret Key 是否正确
-- 检查是否复制了完整的密钥（没有多余的空格）
-- 尝试重新生成密钥
+- 确认 Key 是否正确、未过期
+- 检查 `VITE_DEEPSEEK_MODEL` 是否已经在控制台开通
+- 若为付费模型，请确认账户余额充足
 
 **错误 3：API 调用失败**
 ```
@@ -127,7 +106,7 @@ AI 分析请求失败 (401): Unauthorized
 ```
 
 **解决方法**：
-- 检查账号是否开通了文心一言服务
+- 检查账号是否开通了 DeepSeek 模型
 - 检查应用是否正常启用
 - 检查账号余额是否充足
 
@@ -137,9 +116,9 @@ AI 分析请求失败 (401): Unauthorized
 
 ### 免费额度
 
-百度文心一言提供免费试用额度：
-- **新用户**：赠送一定额度的免费调用次数
-- **每日限额**：免费用户有每日调用次数限制
+硅基流动为 DeepSeek 模型提供免费/优惠额度：
+- **新用户**：注册后可获得一定的 DeepSeek 体验额度
+- **每日限额**：免费模型有 QPS/调用次数限制
 
 ### 计费方式
 
@@ -147,17 +126,17 @@ AI 分析请求失败 (401): Unauthorized
 - **按调用次数**：每次 API 调用收费
 - **按 Token 数量**：根据输入和输出的 Token 数量计费
 
-**本工具使用的模型**：ernie-3.5-8k
-- **价格**：约 ¥0.008/千 Token（具体以官网为准）
+**常用模型**：`deepseek-ai/DeepSeek-V3.2-Exp` / `deepseek-reasoner`
+- **价格**：参考硅基流动官网（约 ¥0.006~0.02 / 千 Token）
 - **预估成本**：
-  - 总体分析：约 ¥0.01-0.02/次
-  - 单点分析：约 ¥0.005-0.01/次
+  - 总体分析：≈ ¥0.01/次（视差异长度而定）
+  - 单点分析：≈ ¥0.003-0.008/次
 
 ### 查看用量
 
-1. 访问 [千帆控制台](https://console.bce.baidu.com/qianfan/overview)
-2. 点击"用量统计"
-3. 查看 API 调用次数和费用
+1. 访问 [硅基流动控制台](https://cloud.siliconflow.cn/)
+2. 进入「用量统计 / 账单」
+3. 查看当日调用次数与费用
 
 ---
 
@@ -198,28 +177,28 @@ AI 分析请求失败 (401): Unauthorized
 2. 检查 `.env` 文件格式：
    ```env
    # ✅ 正确
-   VITE_ERNIE_API_KEY=abcdefg123456
+   VITE_DEEPSEEK_API_KEY=sk_xxx
    
    # ❌ 错误（有引号）
-   VITE_ERNIE_API_KEY="abcdefg123456"
+   VITE_DEEPSEEK_API_KEY="sk_xxx"
    
    # ❌ 错误（有空格）
-   VITE_ERNIE_API_KEY = abcdefg123456
+   VITE_DEEPSEEK_API_KEY = sk_xxx
    ```
 
 ---
 
-### Q2：提示"Access token invalid"
+### Q2：提示"invalid authentication credentials"
 
 **可能原因**：
-1. API Key 或 Secret Key 错误
-2. 密钥已过期或被重置
-3. 应用被禁用
+1. API Key 失效或填写错误
+2. 请求的模型未授权
+3. 账号余额不足
 
 **解决方法**：
-1. 重新复制密钥，确保完整无误
-2. 检查应用状态是否正常
-3. 尝试重新生成密钥
+1. 在控制台重新复制 API Key
+2. 确认 `VITE_DEEPSEEK_MODEL` 已开通
+3. 补充账户余额或切换免费模型
 
 ---
 
@@ -229,7 +208,7 @@ AI 分析请求失败 (401): Unauthorized
 - 账号余额不足或免费额度用完
 
 **解决方法**：
-1. 访问控制台查看余额
+1. 访问硅基流动控制台查看余额
 2. 充值或等待免费额度重置
 3. 优化使用频率，减少不必要的调用
 
@@ -238,7 +217,7 @@ AI 分析请求失败 (401): Unauthorized
 ### Q4：分析速度很慢
 
 **可能原因**：
-1. 网络连接不稳定
+1. 网络连接不稳定或命中限流
 2. API 服务器负载高
 3. 文档内容过长
 
@@ -275,14 +254,14 @@ AI 分析请求失败 (401): Unauthorized
 
 ### 官方文档
 
-- [千帆大模型平台文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/index.html)
-- [API 接口文档](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/jlil56u11)
-- [常见问题](https://cloud.baidu.com/doc/WENXINWORKSHOP/s/Nlks5zkzu)
+- [硅基流动官方文档](https://docs.siliconflow.cn/)
+- [DeepSeek API 参考](https://docs.siliconflow.cn/api-reference/)
+- [常见问题](https://docs.siliconflow.cn/faq)
 
 ### 技术支持
 
-- 📧 百度智能云工单系统
-- 💬 在线客服
+- 📧 硅基流动工单系统
+- 💬 官方企业微信 / 在线客服
 - 📱 技术支持热线
 
 ### 社区支持
@@ -297,8 +276,8 @@ AI 分析请求失败 (401): Unauthorized
 
 在开始使用前，请确认以下事项：
 
-- [ ] 已注册百度智能云账号
-- [ ] 已开通千帆大模型平台服务
+- [ ] 已注册硅基流动账号
+- [ ] 已开通 DeepSeek 模型调用权限
 - [ ] 已创建应用并获取 API 密钥
 - [ ] 已在 `.env` 文件中配置密钥
 - [ ] 已重启应用使配置生效
