@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { Settings } from 'lucide-react';
 import DocumentUploader from '@/components/DocumentUploader';
 import DocumentViewer, { DocumentViewerRef } from '@/components/DocumentViewer';
 import OverallAnalysisPanel from '@/components/OverallAnalysisPanel';
@@ -20,6 +22,7 @@ const ERNIE_API_KEY = import.meta.env.VITE_ERNIE_API_KEY;
 const ERNIE_SECRET_KEY = import.meta.env.VITE_ERNIE_SECRET_KEY;
 
 export default function SamplePage() {
+  const navigate = useNavigate();
   const { toast } = useToast();
   const [doc1, setDoc1] = useState<DocumentInfo | null>(null);
   const [doc2, setDoc2] = useState<DocumentInfo | null>(null);
@@ -379,13 +382,24 @@ export default function SamplePage() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto p-6 space-y-6">
         {/* 标题 */}
-        <div className="text-center space-y-2">
+        <div className="text-center space-y-2 relative">
           <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
             文档智能比对分析工具
           </h1>
           <p className="text-muted-foreground">
             上传两篇文档，AI 将自动分析差异并提供专业见解
           </p>
+          
+          {/* API 配置按钮 */}
+          <Button
+            variant="outline"
+            size="sm"
+            className="absolute top-0 right-0"
+            onClick={() => navigate('/config')}
+          >
+            <Settings className="w-4 h-4 mr-2" />
+            API 配置
+          </Button>
         </div>
 
         {/* 文档上传区域 */}
