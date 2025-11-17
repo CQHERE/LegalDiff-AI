@@ -37,6 +37,9 @@ export default function SamplePage() {
 
   const doc1ViewerRef = useRef<DocumentViewerRef>(null);
   const doc2ViewerRef = useRef<DocumentViewerRef>(null);
+  
+  // 缓存 access token，避免每次都重新获取
+  const accessTokenRef = useRef<{ token: string; expireTime: number } | null>(null);
 
   const handleDoc1Upload = async (file: File) => {
     try {
@@ -112,9 +115,23 @@ export default function SamplePage() {
   };
 
   const getAccessToken = async (): Promise<string> => {
+    // 检查缓存的 token 是否还有效（提前 5 分钟过期）
+    const now = Date.now();
+    if (accessTokenRef.current && accessTokenRef.current.expireTime > now) {
+      return accessTokenRef.current.token;
+    }
+
+    // 获取新的 token
     const url = `https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=${ERNIE_API_KEY}&client_secret=${ERNIE_SECRET_KEY}`;
     const response = await fetch(url, { method: 'POST' });
     const data = await response.json();
+    
+    // 缓存 token（默认有效期 30 天，这里设置为 25 天后过期）
+    accessTokenRef.current = {
+      token: data.access_token,
+      expireTime: now + 25 * 24 * 60 * 60 * 1000
+    };
+    
     return data.access_token;
   };
 
@@ -129,25 +146,20 @@ export default function SamplePage() {
       const removedCount = grouped.filter(d => d.type === 'removed').length;
       const modifiedCount = grouped.filter(d => d.type === 'modified').length;
 
-      const prompt = `你是一位专业的文档分析专家。请对以下文档变更进行总体分析。
+      const prompt = `你是文档分析专家。快速分析以下变更：
 
-**变更统计：**
-- 新增内容：${addedCount} 处
-- 删除内容：${removedCount} 处
-- 修改内容：${modifiedCount} 处
+新增 ${addedCount} 处 | 删除 ${removedCount} 处 | 修改 ${modifiedCount} 处
 
-**分析要求：**
-请提供一份简洁的总体分析报告，包括：
+请用简洁的 Markdown 格式输出（控制在 150 字以内）：
 
-1. **变更概览**：用 2-3 句话总结本次文档修订的主要方向和目的
-2. **变更程度**：评估整体变更幅度（轻微/中等/重大）
-3. **关键影响**：列出 3-5 个最重要的影响点
-4. **风险提示**：如果存在需要特别注意的风险点，请列出
+1. **变更概览**：一句话总结
+2. **变更程度**：轻微/中等/重大
+3. **关键影响**：2-3 个要点
 
-请使用 Markdown 格式，保持简洁专业。`;
+保持简洁，直接输出结果。`;
 
       const response = await fetch(
-        `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-turbo-8k?access_token=${accessToken}`,
+        `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-8k?access_token=${accessToken}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -208,31 +220,33 @@ export default function SamplePage() {
       const accessToken = await getAccessToken();
       
       let diffDescription = '';
+      let contentPreview = '';
       if (diff.type === 'modified') {
-        diffDescription = `**修改前：**\n${diff.removed?.value || ''}\n\n**修改后：**\n${diff.added?.value || ''}`;
+        const removedText = (diff.removed?.value || '').substring(0, 100);
+        const addedText = (diff.added?.value || '').substring(0, 100);
+        diffDescription = `修改：${removedText} → ${addedText}`;
+        contentPreview = `${removedText}...`;
       } else if (diff.type === 'added') {
-        diffDescription = `**新增内容：**\n${diff.added?.value || ''}`;
+        contentPreview = (diff.added?.value || '').substring(0, 100);
+        diffDescription = `新增：${contentPreview}`;
       } else {
-        diffDescription = `**删除内容：**\n${diff.removed?.value || ''}`;
+        contentPreview = (diff.removed?.value || '').substring(0, 100);
+        diffDescription = `删除：${contentPreview}`;
       }
 
-      const prompt = `你是一位专业的文档分析专家。请分析以下文档差异点：
+      const prompt = `快速分析此差异（100字内）：
 
 ${diffDescription}
 
-**分析要求：**
-请提供针对这个差异点的详细分析，包括：
+输出格式：
+**摘要**：一句话
+**重要度**：⭐⭐⭐
+**影响**：简述
 
-1. **内容摘要**：用一句话概括这个变更
-2. **变更类型**：说明这是什么类型的变更（如：新增条款、删除描述、修改参数等）
-3. **重要程度**：用星级评分（⭐⭐⭐⭐⭐ 最高）
-4. **影响分析**：这个变更可能带来什么影响
-5. **建议**：针对这个变更的专业建议
-
-请使用 Markdown 格式，保持简洁专业。`;
+保持简洁。`;
 
       const response = await fetch(
-        `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-4.0-turbo-8k?access_token=${accessToken}`,
+        `https://aip.baidubce.com/rpc/2.0/ai_custom/v1/wenxinworkshop/chat/ernie-3.5-8k?access_token=${accessToken}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

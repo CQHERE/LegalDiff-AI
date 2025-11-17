@@ -43,7 +43,8 @@ export default function OverallAnalysisPanel({
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-8 space-y-4">
             <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-sm text-muted-foreground">AI 正在分析文档整体变更...</p>
+            <p className="text-sm text-muted-foreground">⚡ AI 快速分析中...</p>
+            <p className="text-xs text-muted-foreground/70">使用高速模型，预计 5-10 秒完成</p>
           </div>
         ) : analysis ? (
           <div className="prose prose-sm max-w-none dark:prose-invert">
