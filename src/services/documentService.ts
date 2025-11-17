@@ -8,9 +8,11 @@ export interface DocumentInfo {
 }
 
 export interface DiffResult {
+  id: string;
   type: 'added' | 'removed' | 'modified' | 'unchanged';
   value: string;
   lineNumber?: number;
+  position?: number;
 }
 
 export const parseDocument = async (file: File): Promise<DocumentInfo> => {
@@ -28,24 +30,36 @@ export const compareDocuments = (doc1Content: string, doc2Content: string): Diff
   const changes = Diff.diffWords(doc1Content, doc2Content);
   
   const results: DiffResult[] = [];
+  let position = 0;
   
-  for (const change of changes) {
+  for (let i = 0; i < changes.length; i++) {
+    const change = changes[i];
+    const id = `diff-${i}-${Date.now()}`;
+    
     if (change.added) {
       results.push({
+        id,
         type: 'added',
-        value: change.value
+        value: change.value,
+        position
       });
     } else if (change.removed) {
       results.push({
+        id,
         type: 'removed',
-        value: change.value
+        value: change.value,
+        position
       });
     } else {
       results.push({
+        id,
         type: 'unchanged',
-        value: change.value
+        value: change.value,
+        position
       });
     }
+    
+    position += change.value.length;
   }
   
   return results;
@@ -69,4 +83,11 @@ export const generateDiffSummary = (diffs: DiffResult[]): string => {
   const removedWords = removed.reduce((sum, d) => sum + d.value.split(/\s+/).length, 0);
   
   return `检测到 ${added.length} 处新增内容（约 ${addedWords} 个词），${removed.length} 处删除内容（约 ${removedWords} 个词）。`;
+};
+
+export const getSignificantDiffs = (diffs: DiffResult[]): DiffResult[] => {
+  return diffs.filter(d => 
+    (d.type === 'added' || d.type === 'removed') && 
+    d.value.trim().length > 0
+  );
 };
