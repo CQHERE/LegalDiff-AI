@@ -23,7 +23,15 @@ const DocumentViewer = forwardRef<DocumentViewerRef, DocumentViewerProps>(
 
     useImperativeHandle(ref, () => ({
       scrollToDiff: (diffId: string) => {
-        const element = diffRefs.current.get(diffId);
+        // 尝试直接查找 diffId
+        let element = diffRefs.current.get(diffId);
+        
+        // 如果找不到，尝试查找 groupId 相关的元素
+        if (!element) {
+          // 尝试查找 removed 或 added 后缀的元素
+          element = diffRefs.current.get(`${diffId}-removed`) || diffRefs.current.get(`${diffId}-added`);
+        }
+        
         if (element && scrollAreaRef.current) {
           const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
           if (scrollContainer) {
@@ -77,7 +85,8 @@ const DocumentViewer = forwardRef<DocumentViewerRef, DocumentViewerProps>(
         className = 'inline bg-diff-deleted/20 text-foreground px-1 rounded line-through';
       }
 
-      const isHighlighted = highlightDiffId === diff.id;
+      // 检查是否高亮：比较 diff.id 或 diff.groupId
+      const isHighlighted = highlightDiffId === diff.id || highlightDiffId === diff.groupId;
       if (isHighlighted) {
         className += ' ring-2 ring-primary ring-offset-2';
       }
@@ -89,6 +98,10 @@ const DocumentViewer = forwardRef<DocumentViewerRef, DocumentViewerProps>(
           ref={(el) => {
             if (el && (diff.type === 'added' || diff.type === 'removed')) {
               diffRefs.current.set(diff.id, el);
+              // 如果有 groupId，也用 groupId 存储
+              if (diff.groupId) {
+                diffRefs.current.set(diff.groupId, el);
+              }
             }
           }}
           className={className}

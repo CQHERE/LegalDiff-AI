@@ -23,6 +23,8 @@ export default function SamplePage() {
   const { toast } = useToast();
   const [doc1, setDoc1] = useState<DocumentInfo | null>(null);
   const [doc2, setDoc2] = useState<DocumentInfo | null>(null);
+  const [file1, setFile1] = useState<File | undefined>(undefined);
+  const [file2, setFile2] = useState<File | undefined>(undefined);
   const [diffs, setDiffs] = useState<DiffResult[]>([]);
   const [groupedDiffs, setGroupedDiffs] = useState<GroupedDiff[]>([]);
   const [isComparing, setIsComparing] = useState(false);
@@ -38,6 +40,7 @@ export default function SamplePage() {
 
   const handleDoc1Upload = async (file: File) => {
     try {
+      setFile1(file);
       const docInfo = await parseDocument(file);
       setDoc1(docInfo);
       toast({
@@ -55,6 +58,7 @@ export default function SamplePage() {
 
   const handleDoc2Upload = async (file: File) => {
     try {
+      setFile2(file);
       const docInfo = await parseDocument(file);
       setDoc2(docInfo);
       toast({
@@ -312,10 +316,12 @@ ${diffDescription}
           <DocumentUploader
             label="文档 1（原始版本）"
             onFileSelect={handleDoc1Upload}
+            selectedFile={file1}
           />
           <DocumentUploader
             label="文档 2（修改版本）"
             onFileSelect={handleDoc2Upload}
+            selectedFile={file2}
           />
         </div>
 
