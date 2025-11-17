@@ -47,6 +47,69 @@ All colors MUST be HSL.
     --diff-modified: 38 24% 55%;
   }
 
+  /* Theme presets: override design tokens via a simple class on html/body */
+  .theme-beige {
+    --background: 36 32% 92%;
+    --foreground: 24 32% 25%;
+    --card: 36 30% 95%;
+    --card-foreground: 24 32% 25%;
+    --primary: 24 26% 40%;
+    --primary-foreground: 38 55% 94%;
+    --secondary: 32 20% 85%;
+    --secondary-foreground: 24 28% 30%;
+    --muted: 30 18% 80%;
+    --muted-foreground: 24 20% 40%;
+    --accent: 20 18% 78%;
+    --accent-foreground: 26 28% 28%;
+    --border: 30 20% 80%;
+    --ring: 24 26% 40%;
+    --diff-added: 68 20% 55%;
+    --diff-deleted: 8 32% 50%;
+    --diff-modified: 38 24% 55%;
+  }
+
+  .theme-green {
+    /* Gentle, elegant Morandi green */
+    --background: 120 25% 96%;
+    --foreground: 140 12% 22%;
+    --card: 120 22% 98%;
+    --card-foreground: 140 12% 22%;
+    --primary: 140 22% 38%;
+    --primary-foreground: 120 40% 97%;
+    --secondary: 120 18% 90%;
+    --secondary-foreground: 140 14% 26%;
+    --muted: 110 14% 88%;
+    --muted-foreground: 140 10% 40%;
+    --accent: 100 14% 88%;
+    --accent-foreground: 140 14% 26%;
+    --border: 120 14% 86%;
+    --ring: 140 22% 38%;
+    --diff-added: 140 28% 42%;
+    --diff-deleted: 6 40% 46%;
+    --diff-modified: 40 24% 50%;
+  }
+
+  .theme-mono {
+    /* Minimal black & white */
+    --background: 0 0% 99%;
+    --foreground: 0 0% 10%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 10%;
+    --primary: 0 0% 12%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 94%;
+    --secondary-foreground: 0 0% 12%;
+    --muted: 0 0% 92%;
+    --muted-foreground: 0 0% 40%;
+    --accent: 0 0% 90%;
+    --accent-foreground: 0 0% 12%;
+    --border: 0 0% 85%;
+    --ring: 0 0% 12%;
+    --diff-added: 140 30% 35%; /* darker green */
+    --diff-deleted: 0 65% 45%;
+    --diff-modified: 45 50% 45%;
+  }
+
   .dark {
     --background: 26 20% 14%;
     --foreground: 32 32% 88%;

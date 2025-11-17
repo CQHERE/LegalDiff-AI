@@ -80,9 +80,9 @@ const DocumentViewer = forwardRef<DocumentViewerRef, DocumentViewerProps>(
       let className = 'inline';
       
       if (diff.type === 'added') {
-        className = 'inline bg-diff-added/20 text-foreground px-1 rounded';
+        className = 'inline bg-diff-added/35 text-foreground px-1 rounded border border-diff-added/50 shadow-[0_0_0_2px_hsl(var(--diff-added)/.15)]';
       } else if (diff.type === 'removed') {
-        className = 'inline bg-diff-deleted/20 text-foreground px-1 rounded line-through';
+        className = 'inline bg-diff-deleted/30 text-foreground px-1 rounded line-through border border-diff-deleted/50 shadow-[0_0_0_2px_hsl(var(--diff-deleted)/.15)]';
       }
 
       // 检查是否高亮：比较 diff.id 或 diff.groupId
@@ -135,4 +135,3 @@ const DocumentViewer = forwardRef<DocumentViewerRef, DocumentViewerProps>(
 DocumentViewer.displayName = 'DocumentViewer';
 
 export default DocumentViewer;
-

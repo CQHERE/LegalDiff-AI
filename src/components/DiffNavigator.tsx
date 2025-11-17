@@ -65,7 +65,7 @@ export default function DiffNavigator({ groupedDiffs, onDiffClick, activeDiffId 
     <Card className="shadow-md">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg flex items-center justify-between">
-          <span>差异导航</span>
+          <span>导航</span>
           <div className="flex gap-2">
             <Badge variant="outline" className="bg-diff-added/10">
               <Plus className="w-3 h-3 mr-1" />

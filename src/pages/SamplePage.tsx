@@ -6,6 +6,7 @@ import DocumentViewer, { DocumentViewerRef } from '@/components/DocumentViewer';
 import OverallAnalysisPanel from '@/components/OverallAnalysisPanel';
 import DiffAnalysisPanel from '@/components/DiffAnalysisPanel';
 import DiffNavigator from '@/components/DiffNavigator';
+import ThemeSwitcher from '@/components/ThemeSwitcher';
 import {
   parseDocument,
   compareDocuments,
@@ -27,6 +28,7 @@ const DEEPSEEK_FREQUENCY_PENALTY = Number(import.meta.env.VITE_DEEPSEEK_FREQUENC
 const DEEPSEEK_MIN_P = Number(import.meta.env.VITE_DEEPSEEK_MIN_P) || 0.05;
 const MAX_OVERVIEW_DIFFS = 20;
 const DIFF_SNIPPET_LENGTH = 400;
+const CONTEXT_RADIUS = 120; // characters around the change for local analysis
 
 const sanitizeText = (text: string, maxLength: number): string => {
   const cleaned = text.replace(/\s+/g, ' ').trim();
@@ -70,20 +72,48 @@ const summarizeDiffs = (diffs: GroupedDiff[]): string => {
   return items.join('\n');
 };
 
-const formatDiffDetail = (diff: GroupedDiff): string => {
+const extractContext = (full: string, piece: string, approxPos?: number, radius = CONTEXT_RADIUS) => {
+  if (!piece) return '';
+  let idx = -1;
+  if (approxPos !== undefined && approxPos >= 0 && approxPos < full.length) {
+    // Try to find near approxPos
+    const windowStart = Math.max(0, approxPos - radius * 2);
+    const windowEnd = Math.min(full.length, approxPos + radius * 2);
+    const inWindow = full.slice(windowStart, windowEnd);
+    const localIdx = inWindow.indexOf(piece);
+    if (localIdx !== -1) {
+      idx = windowStart + localIdx;
+    }
+  }
+  if (idx === -1) idx = full.indexOf(piece);
+  if (idx === -1) {
+    return sanitizeText(piece, radius * 2);
+  }
+  const start = Math.max(0, idx - radius);
+  const end = Math.min(full.length, idx + piece.length + radius);
+  const prefix = start > 0 ? '…' : '';
+  const suffix = end < full.length ? '…' : '';
+  return `${prefix}${full.slice(start, end)}${suffix}`.replace(/\s+/g, ' ');
+};
+
+const formatDiffDetail = (diff: GroupedDiff, doc1Text?: string, doc2Text?: string): string => {
   if (diff.type === 'modified') {
-    const removedText = sanitizeText(diff.removed?.value || '', DIFF_SNIPPET_LENGTH);
-    const addedText = sanitizeText(diff.added?.value || '', DIFF_SNIPPET_LENGTH);
-    return `原文：${removedText}\n修改后：${addedText}`;
+    const removedRaw = diff.removed?.value || '';
+    const addedRaw = diff.added?.value || '';
+    const removedCtx = doc1Text ? extractContext(doc1Text, removedRaw, diff.position) : removedRaw;
+    const addedCtx = doc2Text ? extractContext(doc2Text, addedRaw, diff.position) : addedRaw;
+    return `原文片段：${sanitizeText(removedCtx, DIFF_SNIPPET_LENGTH)}\n修改后片段：${sanitizeText(addedCtx, DIFF_SNIPPET_LENGTH)}`;
   }
 
   if (diff.type === 'added') {
-    const addedText = sanitizeText(diff.added?.value || '', DIFF_SNIPPET_LENGTH);
-    return `新增内容：${addedText}`;
+    const addedRaw = diff.added?.value || '';
+    const addedCtx = doc2Text ? extractContext(doc2Text, addedRaw, diff.position) : addedRaw;
+    return `新增片段：${sanitizeText(addedCtx, DIFF_SNIPPET_LENGTH)}`;
   }
 
-  const removedText = sanitizeText(diff.removed?.value || '', DIFF_SNIPPET_LENGTH);
-  return `删除内容：${removedText}`;
+  const removedRaw = diff.removed?.value || '';
+  const removedCtx = doc1Text ? extractContext(doc1Text, removedRaw, diff.position) : removedRaw;
+  return `删除片段：${sanitizeText(removedCtx, DIFF_SNIPPET_LENGTH)}`;
 };
 
 const requestDeepSeekAnalysis = async (prompt: string, onChunk: (chunk: string) => void) => {
@@ -298,7 +328,7 @@ ${diffSummary}
         throw new Error('请先在 .env 中设置 VITE_DEEPSEEK_API_KEY，以启用 DeepSeek AI 分析');
       }
 
-      const diffDetail = formatDiffDetail(diff);
+      const diffDetail = formatDiffDetail(diff, doc1?.content, doc2?.content);
 
       const prompt = `你是一位资深金融法律顾问，请从交易审查的角度解读以下变更：
 
@@ -344,14 +374,22 @@ ${diffDetail}
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <div className="container mx-auto p-6 space-y-6">
-        {/* 标题 */}
-        <div className="text-center space-y-2">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-            文档智能比对分析工具
-          </h1>
-          <p className="text-muted-foreground">
-            上传两篇文档，AI 将自动分析差异并提供专业见解
-          </p>
+        {/* 标题及风格切换 */}
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-full flex items-center justify-between">
+            <div className="flex-1" />
+            <div className="text-center">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
+                文档智能比对分析工具
+              </h1>
+              <p className="text-muted-foreground">
+                上传两篇文档，AI 将自动分析差异并提供专业见解
+              </p>
+            </div>
+            <div className="flex-1 flex justify-end">
+              <ThemeSwitcher />
+            </div>
+          </div>
         </div>
 
         {/* 文档上传区域 */}

@@ -40,7 +40,7 @@ export default function DiffAnalysisPanel({
           <div className="flex flex-col items-center justify-center py-8 space-y-2 text-muted-foreground">
             <Sparkles className="w-12 h-12 opacity-50" />
             <p className="text-sm text-center">
-              点击左侧差异导航中的任意差异点<br />
+              点击左侧导航中的任意差异点<br />
               查看 AI 针对该差异的详细分析
             </p>
           </div>
