@@ -13,6 +13,7 @@ export interface DiffResult {
   value: string;
   lineNumber?: number;
   position?: number;
+  groupId?: string;
 }
 
 export const parseDocument = async (file: File): Promise<DocumentInfo> => {
@@ -31,12 +32,38 @@ export const compareDocuments = (doc1Content: string, doc2Content: string): Diff
   
   const results: DiffResult[] = [];
   let position = 0;
+  const timestamp = Date.now();
   
   for (let i = 0; i < changes.length; i++) {
     const change = changes[i];
-    const id = `diff-${i}-${Date.now()}`;
+    const nextChange = i < changes.length - 1 ? changes[i + 1] : null;
     
-    if (change.added) {
+    // 检查是否是修改：当前是删除，下一个是新增
+    if (change.removed && nextChange && nextChange.added) {
+      const id = `diff-${i}-${timestamp}`;
+      
+      // 添加删除部分
+      results.push({
+        id: `${id}-removed`,
+        type: 'removed',
+        value: change.value,
+        position,
+        groupId: id
+      });
+      
+      // 添加新增部分
+      results.push({
+        id: `${id}-added`,
+        type: 'added',
+        value: nextChange.value,
+        position,
+        groupId: id
+      });
+      
+      position += change.value.length;
+      i++; // 跳过下一个，因为已经处理了
+    } else if (change.added) {
+      const id = `diff-${i}-${timestamp}`;
       results.push({
         id,
         type: 'added',
@@ -44,6 +71,7 @@ export const compareDocuments = (doc1Content: string, doc2Content: string): Diff
         position
       });
     } else if (change.removed) {
+      const id = `diff-${i}-${timestamp}`;
       results.push({
         id,
         type: 'removed',
@@ -51,6 +79,7 @@ export const compareDocuments = (doc1Content: string, doc2Content: string): Diff
         position
       });
     } else {
+      const id = `diff-${i}-${timestamp}`;
       results.push({
         id,
         type: 'unchanged',
@@ -90,4 +119,56 @@ export const getSignificantDiffs = (diffs: DiffResult[]): DiffResult[] => {
     (d.type === 'added' || d.type === 'removed') && 
     d.value.trim().length > 0
   );
+};
+
+export interface GroupedDiff {
+  id: string;
+  type: 'added' | 'removed' | 'modified';
+  removed?: DiffResult;
+  added?: DiffResult;
+  position: number;
+}
+
+export const getGroupedDiffs = (diffs: DiffResult[]): GroupedDiff[] => {
+  const grouped: GroupedDiff[] = [];
+  const processedIds = new Set<string>();
+  
+  for (const diff of diffs) {
+    if (diff.type === 'unchanged' || processedIds.has(diff.id)) {
+      continue;
+    }
+    
+    // 如果有 groupId，说明是修改类型
+    if (diff.groupId) {
+      // 查找同组的另一个差异
+      const sibling = diffs.find(d => 
+        d.groupId === diff.groupId && d.id !== diff.id
+      );
+      
+      if (sibling && !processedIds.has(sibling.id)) {
+        grouped.push({
+          id: diff.groupId,
+          type: 'modified',
+          removed: diff.type === 'removed' ? diff : sibling,
+          added: diff.type === 'added' ? diff : sibling,
+          position: diff.position || 0
+        });
+        
+        processedIds.add(diff.id);
+        processedIds.add(sibling.id);
+      }
+    } else {
+      // 单独的新增或删除
+      grouped.push({
+        id: diff.id,
+        type: diff.type as 'added' | 'removed',
+        [diff.type]: diff,
+        position: diff.position || 0
+      });
+      
+      processedIds.add(diff.id);
+    }
+  }
+  
+  return grouped;
 };
