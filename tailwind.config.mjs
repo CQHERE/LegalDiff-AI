@@ -22,6 +22,10 @@ export default {
             }
         },
         extend: {
+            fontFamily: {
+                sans: ['STZhongsong', 'STSong', 'Songti SC', 'SimSun', 'serif'],
+                serif: ['STZhongsong', 'STSong', 'Songti SC', 'SimSun', 'serif']
+            },
             colors: {
                 border: 'hsl(var(--border))',
                 borderColor: {

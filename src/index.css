@@ -10,79 +10,79 @@ All colors MUST be HSL.
 @layer base {
   :root {
     --radius: 0.5rem;
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 221 83% 53%;
-    --chart-1: 12 76% 61%;
-    --chart-2: 173 58% 39%;
-    --chart-3: 197 37% 24%;
-    --chart-4: 43 74% 66%;
-    --chart-5: 27 87% 67%;
-    --sidebar-background: 300 0% 98%;
-    --sidebar-foreground: 300 0% 4%;
-    --sidebar-primary: 330 0% 9%;
-    --sidebar-primary-foreground: 300 0% 98%;
-    --sidebar-accent: 300 0% 96%;
-    --sidebar-accent-foreground: 330 0% 9%;
-    --sidebar-border: 330 0% 90%;
-    --sidebar-ring: 0 0% 63%;
-    --destructive-foreground: 210 40% 98%;
-    --diff-added: 48 96% 53%;
-    --diff-deleted: 0 84% 60%;
-    --diff-modified: 25 95% 53%;
+    --background: 36 32% 92%;
+    --foreground: 24 32% 25%;
+    --card: 36 30% 95%;
+    --card-foreground: 24 32% 25%;
+    --popover: 36 30% 95%;
+    --popover-foreground: 24 32% 25%;
+    --primary: 24 26% 40%;
+    --primary-foreground: 38 55% 94%;
+    --secondary: 32 20% 85%;
+    --secondary-foreground: 24 28% 30%;
+    --muted: 30 18% 80%;
+    --muted-foreground: 24 20% 40%;
+    --accent: 20 18% 78%;
+    --accent-foreground: 26 28% 28%;
+    --destructive: 8 35% 45%;
+    --destructive-foreground: 36 55% 94%;
+    --border: 30 20% 80%;
+    --input: 30 20% 80%;
+    --ring: 24 26% 40%;
+    --chart-1: 25 26% 45%;
+    --chart-2: 34 20% 58%;
+    --chart-3: 12 22% 52%;
+    --chart-4: 46 25% 65%;
+    --chart-5: 4 24% 46%;
+    --sidebar-background: 35 24% 90%;
+    --sidebar-foreground: 26 28% 28%;
+    --sidebar-primary: 24 26% 40%;
+    --sidebar-primary-foreground: 38 55% 94%;
+    --sidebar-accent: 32 18% 83%;
+    --sidebar-accent-foreground: 26 28% 28%;
+    --sidebar-border: 30 16% 78%;
+    --sidebar-ring: 26 24% 42%;
+    --diff-added: 68 20% 55%;
+    --diff-deleted: 8 32% 50%;
+    --diff-modified: 38 24% 55%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 221 83% 53%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%; 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 221 83% 53%;
-    --chart-1: 220 70% 50%;
-    --chart-2: 160 60% 45%;
-    --chart-3: 30 80% 55%;
-    --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%;
-    --sidebar-background: 330 0% 9%;
-    --sidebar-foreground: 300 0% 98%;
-    --sidebar-primary: 225 84% 49%;
-    --sidebar-primary-foreground: 300 0% 98%;
-    --sidebar-accent: 320 0% 15%;
-    --sidebar-accent-foreground: 300 0% 98%;
-    --sidebar-border: 300 50% 0% / 10%;
-    --sidebar-ring: 300 0% 45%;
-    --destructive-foreground: 210 40% 98%;
-    --diff-added: 48 96% 53%;
-    --diff-deleted: 0 84% 60%;
-    --diff-modified: 25 95% 53%;
+    --background: 26 20% 14%;
+    --foreground: 32 32% 88%;
+    --card: 26 18% 18%;
+    --card-foreground: 32 32% 88%;
+    --popover: 26 18% 18%;
+    --popover-foreground: 32 32% 88%;
+    --primary: 24 26% 58%;
+    --primary-foreground: 28 18% 12%;
+    --secondary: 28 16% 24%;
+    --secondary-foreground: 32 32% 88%;
+    --muted: 28 16% 24%;
+    --muted-foreground: 32 18% 70%;
+    --accent: 20 18% 32%;
+    --accent-foreground: 32 32% 88%;
+    --destructive: 8 35% 48%;
+    --destructive-foreground: 28 18% 12%;
+    --border: 24 14% 28%;
+    --input: 24 14% 28%;
+    --ring: 24 26% 58%;
+    --chart-1: 25 26% 60%;
+    --chart-2: 34 20% 54%;
+    --chart-3: 16 22% 52%;
+    --chart-4: 42 24% 60%;
+    --chart-5: 6 24% 50%;
+    --sidebar-background: 24 16% 16%;
+    --sidebar-foreground: 32 32% 88%;
+    --sidebar-primary: 24 26% 58%;
+    --sidebar-primary-foreground: 28 18% 12%;
+    --sidebar-accent: 22 18% 26%;
+    --sidebar-accent-foreground: 32 32% 88%;
+    --sidebar-border: 20 14% 32%;
+    --sidebar-ring: 24 26% 58%;
+    --diff-added: 66 22% 58%;
+    --diff-deleted: 6 34% 52%;
+    --diff-modified: 36 24% 58%;
   }
 }
 
@@ -92,6 +92,7 @@ All colors MUST be HSL.
   }
 
   body {
+    font-family: "STZhongsong", "STSong", "Songti SC", "SimSun", serif;
     @apply bg-background text-foreground;
   }
 }
