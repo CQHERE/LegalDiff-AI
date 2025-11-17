@@ -82,6 +82,11 @@ export default {
                     '3': 'hsl(var(--chart-3))',
                     '4': 'hsl(var(--chart-4))',
                     '5': 'hsl(var(--chart-5))'
+                },
+                diff: {
+                    added: 'hsl(var(--diff-added))',
+                    deleted: 'hsl(var(--diff-deleted))',
+                    modified: 'hsl(var(--diff-modified))'
                 }
             },
             borderRadius: {
